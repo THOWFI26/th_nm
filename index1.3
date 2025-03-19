@@ -1,0 +1,73 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Scanner;
+import org.json.JSONObject;
+
+public class WeatherDashboard {
+    private static final String API_KEY = "YOUR_OPENWEATHERMAP_API_KEY";
+
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Weather Dashboard");
+        frame.setSize(400, 300);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new FlowLayout());
+
+        JTextField cityField = new JTextField(15);
+        JButton searchButton = new JButton("Search");
+        JTextArea resultArea = new JTextArea(6, 30);
+        resultArea.setEditable(false);
+
+        frame.add(new JLabel("Enter City:"));
+        frame.add(cityField);
+        frame.add(searchButton);
+        frame.add(new JScrollPane(resultArea));
+
+        searchButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String city = cityField.getText().trim();
+                if (!city.isEmpty()) {
+                    String weatherData = getWeather(city);
+                    resultArea.setText(weatherData);
+                } else {
+                    resultArea.setText("Please enter a city name.");
+                }
+            }
+        });
+
+        frame.setVisible(true);
+    }
+
+    private static String getWeather(String city) {
+        String apiUrl = "https://api.openweathermap.org/data/2.5/weather?q=" + city + "&appid=" + API_KEY + "&units=metric";
+
+        try {
+            URL url = new URL(apiUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+
+            Scanner scanner = new Scanner(url.openStream());
+            StringBuilder response = new StringBuilder();
+            while (scanner.hasNext()) {
+                response.append(scanner.nextLine());
+            }
+            scanner.close();
+
+            JSONObject jsonObject = new JSONObject(response.toString());
+            String cityName = jsonObject.getString("name");
+            String country = jsonObject.getJSONObject("sys").getString("country");
+            double temperature = jsonObject.getJSONObject("main").getDouble("temp");
+            int humidity = jsonObject.getJSONObject("main").getInt("humidity");
+            double windSpeed = jsonObject.getJSONObject("wind").getDouble("speed");
+
+            return "City: " + cityName + ", " + country + "\nTemperature: " + temperature + "°C\nHumidity: " + humidity + "%\nWind Speed: " + windSpeed + " m/s";
+        } catch (IOException | org.json.JSONException e) {
+            return "City not found. Please try again.";
+        }
+    }
+}
